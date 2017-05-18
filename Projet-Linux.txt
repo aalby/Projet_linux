@@ -1,0 +1,228 @@
+#include <stdio.h>
+#include <signal.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <dirent.h>
+
+#define NUMBER_OF_COMMANDS 8
+
+char* getLinefromUser(char* prompt)
+{
+	char* commandfromUser = NULL;
+	size_t length = 0;
+	printf("%s ",prompt);
+	fflush(stdin);
+	getline(&commandfromUser, &length, stdin);
+	commandfromUser[strlen(commandfromUser)-1] = '\0';
+	return commandfromUser;
+}
+
+
+
+
+char* getParamfromUser(char* line, long unsigned int firstl)
+{
+	char* param = malloc(sizeof(char)*strlen(line));
+	int i = 0;
+	if(firstl < strlen(line)-1)
+	{
+		while(line[firstl] != '\0')
+		{
+			param[i] = line[firstl];
+			firstl++;
+			i++;
+		}
+	}
+	return param;
+	free(param);
+}
+
+void changeDirectory(char* param)
+{
+	errno = 0;
+	int changeDir = 0;
+	changeDir = chdir(param);
+	if(changeDir == -1)printf("Unable to complete operation: %s \n", strerror(errno));
+}
+
+void showCWD()
+{
+	char cwd[1024];
+	char* type = NULL;
+	int isEmpty = 0;
+	errno = 0;
+	DIR* dir;
+	struct dirent *fileindir;
+	if(getcwd(cwd, sizeof(cwd))!=NULL)printf("Current working directory: %s\n",cwd);
+	else printf("Unable to complete operation: %s", strerror(errno));
+	dir = opendir(cwd);
+	printf("Content of %s:\nTYPE\t    NAME\n\n", cwd);
+	errno = 0;
+	if(dir)
+	{
+		while((fileindir=readdir(dir)) != NULL)
+		{
+			if(fileindir->d_type == 8)type = "FILE\t  ";
+			if(fileindir->d_type == 4)type = "DIRECTORY ";
+			printf("%s |%s\n",type, fileindir->d_name);
+			isEmpty = 1;
+		}
+		closedir(dir);
+		if(isEmpty==0)printf("%s: EMPTY DIRECTORY\n",cwd);
+	}
+	else printf("Unable to complete operation: %s\n", strerror(errno));
+
+}
+
+void changePrompt(char** prompt)
+{
+	char cwd[1024];
+	errno = 0;
+	if(getcwd(cwd, sizeof(cwd))!=NULL)*prompt = strcat(cwd,":-$ ");
+	else printf("Unable to complete operation: %s", strerror(errno));
+}
+
+void showContent(char* param)
+{
+	DIR* dir;
+	struct dirent* fileindir;
+	dir = opendir(param);
+	errno = 0;
+	int isEmpty = 0, firstloop = 0;
+	char* type = NULL;
+	if(dir)
+	{
+		while((fileindir=readdir(dir)) != NULL)
+		{
+
+			if(strcmp(fileindir->d_name,".")!=0 && strcmp(fileindir->d_name,"..")!=0)
+			{
+				if(firstloop == 0)printf("Content of %s:\nTYPE\t    NAME\n\n", param);
+				if(fileindir->d_type == 8)type = "FILE\t  ";
+				if(fileindir->d_type == 4)type = "DIRECTORY ";
+				printf("%s |%s\n",type, fileindir->d_name);
+				isEmpty = 1;
+				firstloop = 1;
+			}
+		}
+		closedir(dir);
+		if(isEmpty==0)printf("%s: EMPTY DIRECTORY\n",param);
+	}
+	else printf("Unable to complete operation: No such file or directory");
+}
+//des fonctions du manuel de linux anglais
+void deleteFile(char* param)
+{
+	int all_ok = 0;
+	errno = 0;
+	all_ok = remove(param);
+	if(all_ok == -1)printf("Unable to complete operation: %s\n", strerror(errno));
+}
+
+void renameFile(char* param)
+{
+	char* param1 = NULL;
+	char* param2 = NULL;
+	int rename_ok = 0;
+	errno = 0;
+	param1 = getCommandfromUser(param);
+	param2 = getParamfromUser(param,strlen(param1)+1);
+	if(strcmp(param1,param2)!=0)
+	{
+		rename_ok = rename(param1, param2);
+		if(rename_ok == -1)printf("Unable to complete operation: %s\n", strerror(errno));
+	}
+	else
+	{
+		printf("Unable to complete operation: old_filename and new_filename are identical\n");
+	}
+}
+
+void help()
+{
+	printf("FONCTION\t DESCRIPTION\n");
+	printf("\nexit \t\t sort du shell\n");
+	printf("cd [] \t\t se déplace vers le répertoire ciblé\n");
+	printf("Lister_RepC []   lister le répertoire courant et les fichier de celui-ci\n");
+	printf("changePrompt []  changer le prompt actuel\n");
+    	printf("Lister [] \t lister les fichiers du répertoire donné\n");
+    	printf("supprimer []  \t supprime le fichier donné\n");
+    	printf("renommer [][]\t renommer le fichier donné\n");
+    	printf("help \t\t affiche ce menu\n");
+}
+
+void Menu (int program, char *parm, char**prompt)
+{
+	int choixuser=0;
+
+	printf(« Menu de commande : n »);
+	printf(« n »);
+	printf(« n »);
+	printf(« 1. Sortie SHELL n »);
+	printf(« 2. Changer prompt n »);
+	printf(« 3. Liste contenue n »);
+	printf(« 4. Renommer Fichier n »);
+	printf(« 5. Supprimer Fichier n »);
+	printf(« 6. Changer repertoire n »);
+	printf(« 7. Montrer CWD n »);
+	printf(« n »);
+	printf(« n »);
+	printf(Choix : ? « );
+
+	while(choixuser !=1 !=2 !=3 !=4 !=5 !=6 !=7){
+		scanf(« %d, choixuser »);}
+
+	if(choixuser=1)
+		kill(getpid(), SIGINT);
+
+	if(choixuser=2)
+		changementDirection(param);
+
+	if(choixuser=3)
+		shouwContent(param);
+
+	if(choixuser=4)
+		changePrompt(prompt);
+
+	if(choixuser=5)
+		ContenuRepertoireCourant(param);
+
+	if(choixuser=6)
+		deletefile(param);
+
+	if(choixuser=7)
+		renamefile(param);
+
+
+
+int main(int argc, char* argv[])
+{
+	char* commandfromUser = NULL;
+	char* param = NULL;
+	char* command = NULL;
+	char* prompt = {"$"};
+	char* possibleCommands[] = {"exit","cd","Lister_RepC","changePrompt","Lister","supprimer","renommer","help"};
+	int i = 0, commandexists = 0;
+	while(1)
+	{
+		commandfromUser = getLinefromUser(prompt);
+		command = getCommandfromUser(commandfromUser);
+		param = getParamfromUser(commandfromUser, strlen(command)+1);
+		for(i = 0; i < NUMBER_OF_COMMANDS; i++)
+		{
+			if(!strcmp(command,possibleCommands[i]))
+			{
+				executecommand(i+1, param, &prompt);
+				commandexists = 1;
+			}
+		}
+		if(commandexists == 0)printf("'%s' is not a recognized command, please try again.\n", command);
+		commandfromUser = NULL;
+		param = NULL;
+		command = NULL;
+		i = 0;
+		commandexists = 0;
+	}
+}
